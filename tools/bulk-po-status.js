@@ -19,11 +19,6 @@
 		finished: 'Finished',
 	};
 
-	function isPurchaseListingPage() {
-		const params = new URLSearchParams(location.search);
-		return params.get('name') === 'purchase.listings.purchases';
-	}
-
 	function parseIds(raw) {
 		return [...new Set(
 			raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
@@ -203,8 +198,6 @@
 		document.head.appendChild(style);
 	}
 
-	let observer = null;
-
 	function attachLauncher() {
 		if (document.getElementById(LAUNCHER_ID)) return true;
 
@@ -331,48 +324,37 @@
 		}
 
 		attachLauncher();
-
-		if (!observer) {
-			observer = new MutationObserver(() => {
-				if (isPurchaseListingPage()) {
-					attachLauncher();
-				}
-			});
-			observer.observe(document.body, { childList: true, subtree: true });
-		}
 	}
 
 	function teardownUI() {
-		if (observer) {
-			observer.disconnect();
-			observer = null;
-		}
 		document.getElementById(LAUNCHER_ID + '-item')?.remove();
 		document.getElementById(LAUNCHER_ID)?.remove();
 		document.getElementById(OVERLAY_ID)?.remove();
 	}
 
-	function onURLChange() {
-		if (isPurchaseListingPage()) {
+	// Detection is driven by the toolbar button's presence in the DOM rather than URL/pushState,
+	// since this listing page doesn't reliably signal navigation through those.
+	function syncForCurrentPage() {
+		if (document.getElementById('newPurchaseOrderButton')) {
 			buildUI();
 		} else {
 			teardownUI();
 		}
 	}
 
-	// route hook is installed once by the master loader; subscribe instead of patching history ourselves
-	window.__mkl && window.__mkl.onRouteChange(onURLChange);
-
-	// Fallback in case this listing page isn't always reached via pushState/replaceState:
-	// watch for DOM changes and re-check the URL directly, independent of the route bus.
-	let lastHref = location.href;
-	function checkHrefDrift() {
-		if (location.href === lastHref) return;
-		lastHref = location.href;
-		onURLChange();
+	let syncScheduled = false;
+	function scheduleSync() {
+		if (syncScheduled) return;
+		syncScheduled = true;
+		window.requestAnimationFrame(() => {
+			syncScheduled = false;
+			syncForCurrentPage();
+		});
 	}
-	new MutationObserver(() => window.requestAnimationFrame(checkHrefDrift))
+
+	window.__mkl && window.__mkl.onRouteChange(scheduleSync);
+	new MutationObserver(scheduleSync)
 		.observe(document.documentElement || document.body, { childList: true, subtree: true });
 
-	onURLChange();
+	scheduleSync();
 })();
