@@ -363,5 +363,16 @@
 	// route hook is installed once by the master loader; subscribe instead of patching history ourselves
 	window.__mkl && window.__mkl.onRouteChange(onURLChange);
 
+	// Fallback in case this listing page isn't always reached via pushState/replaceState:
+	// watch for DOM changes and re-check the URL directly, independent of the route bus.
+	let lastHref = location.href;
+	function checkHrefDrift() {
+		if (location.href === lastHref) return;
+		lastHref = location.href;
+		onURLChange();
+	}
+	new MutationObserver(() => window.requestAnimationFrame(checkHrefDrift))
+		.observe(document.documentElement || document.body, { childList: true, subtree: true });
+
 	onURLChange();
 })();
