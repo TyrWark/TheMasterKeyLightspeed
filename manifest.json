@@ -13,6 +13,63 @@
       "match": ["https://lightspeedanalytics.net/category/*", "https://app.lightspeedanalytics.net/*"],
       "path": "tools/analytics-report-recovery.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "partial-payments-viewer",
+      "name": "Partial Payments Viewer",
+      "match": ["https://*.merchantos.com/*"],
+      "path": "tools/partial-payments-viewer.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "browser-print-force",
+      "name": "MerchantOS Browser Print Force",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/browser-print-force.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "credit-reserve-finder",
+      "name": "Lightspeed - Reserved Account Credit Finder",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/credit-reserve-finder.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "customer-csv-mapper",
+      "name": "Customer CSV/Excel Column Mapper & Bulk Updater",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/customer-csv-mapper.js",
+      "requires": ["https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
+      "enabledByDefault": true
+    },
+    {
+      "id": "employee-role-exim",
+      "name": "Lightspeed Employee Role Export/Import",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/employee-role-exim.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "bulk-po-status",
+      "name": "Bulk PO Status Changer",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/bulk-po-status.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "pulse-improvements",
+      "name": "Pro-Serv Pulse — Missing Note Flag",
+      "match": ["https://fleuriengraveson.github.io/pro-serv-pulse/*"],
+      "path": "tools/pulse-improvements.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "sale-incompleter",
+      "name": "MerchantOS Sale Incompleter",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/sale-incompleter.js",
+      "enabledByDefault": true
     }
   ]
 }

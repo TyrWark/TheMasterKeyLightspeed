@@ -9,9 +9,11 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // @grant        GM_setClipboard
 // @grant        unsafeWindow
 // @connect      raw.githubusercontent.com
+// @connect      cdn.jsdelivr.net
 // ==/UserScript==
 
 (function () {
@@ -88,7 +90,7 @@
 
 	async function loadManifest() {
 		try {
-			const text = await gmGet(MANIFEST_URL);
+			const text = await gmGet(MANIFEST_URL + '?_=' + Date.now());
 			GM_setValue(MANIFEST_CACHE_KEY, text);
 			return JSON.parse(text);
 		} catch (err) {
@@ -99,10 +101,41 @@
 		}
 	}
 
+	// new Function() runs in global scope, so GM_* bindings must be forwarded explicitly -
+	// they aren't guaranteed to be reachable as implicit globals from dynamically eval'd code.
+	const GM_API_NAMES = ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_setValue', 'GM_getValue', 'GM_setClipboard', 'unsafeWindow'];
+	const RAW_GM_registerMenuCommand = typeof GM_registerMenuCommand !== 'undefined' ? GM_registerMenuCommand : undefined;
+	const RAW_GM_unregisterMenuCommand = typeof GM_unregisterMenuCommand !== 'undefined' ? GM_unregisterMenuCommand : undefined;
+	const RAW_GM_setValue = typeof GM_setValue !== 'undefined' ? GM_setValue : undefined;
+	const RAW_GM_getValue = typeof GM_getValue !== 'undefined' ? GM_getValue : undefined;
+	const RAW_GM_setClipboard = typeof GM_setClipboard !== 'undefined' ? GM_setClipboard : undefined;
+	const RAW_unsafeWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : undefined;
+
+	// Tampermonkey has no real per-tool submenu, so prefix each tool's commands with its name instead
+	// (e.g. "Analytics Report Recovery: Activate recovery tool") to keep a flat menu list groupable.
+	function scopedRegisterMenuCommand(tool) {
+		if (!RAW_GM_registerMenuCommand) return undefined;
+		return (label, fn, ...rest) => RAW_GM_registerMenuCommand(`${tool.name}: ${label}`, fn, ...rest);
+	}
+
+	// dependency scripts (from a tool's manifest "requires" array, e.g. an @require'd CDN library) are
+	// fetched once per page and executed before the tool itself, memoized so shared deps aren't reloaded.
+	const loadedRequires = new Set();
+	async function loadRequire(url) {
+		if (loadedRequires.has(url)) return;
+		loadedRequires.add(url);
+		const code = await gmGet(url);
+		new Function(code)();
+	}
+
 	async function loadTool(tool) {
 		try {
-			const code = await gmGet(RAW_BASE + tool.path);
-			new Function(code)();
+			if (Array.isArray(tool.requires)) {
+				for (const url of tool.requires) await loadRequire(url);
+			}
+			const code = await gmGet(RAW_BASE + tool.path + '?_=' + Date.now());
+			const wrapped = new Function(...GM_API_NAMES, code);
+			wrapped(scopedRegisterMenuCommand(tool), RAW_GM_unregisterMenuCommand, RAW_GM_setValue, RAW_GM_getValue, RAW_GM_setClipboard, RAW_unsafeWindow);
 			console.log(LOG_PREFIX, 'loaded', tool.id);
 		} catch (err) {
 			console.error(LOG_PREFIX, 'failed to load', tool.id, err);
