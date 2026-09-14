@@ -70,6 +70,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/sale-incompleter.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "misc-sale-enforcer",
+      "name": "Misc Sale Enforcer",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/misc-sale-enforcer.js",
+      "enabledByDefault": true
     }
   ]
 }
