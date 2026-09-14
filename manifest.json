@@ -1,0 +1,11 @@
+{
+  "tools": [
+    {
+      "id": "credit-account-toolbox",
+      "name": "MerchantOS Credit Account Toolbox",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/credit-account-toolbox.js",
+      "enabledByDefault": true
+    }
+  ]
+}
