@@ -6,6 +6,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/credit-account-toolbox.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "analytics-report-recovery",
+      "name": "Analytics Report Recovery",
+      "match": ["https://lightspeedanalytics.net/category/*", "https://app.lightspeedanalytics.net/*"],
+      "path": "tools/analytics-report-recovery.js",
+      "enabledByDefault": true
     }
   ]
 }
