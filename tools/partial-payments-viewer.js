@@ -55,19 +55,36 @@ function getSalePayments(){
     })
 }
 
-// Handles URL match/unmatch logic for SPA navigation
-function onURLChange(url){
-    const UrlMatch = /https:\/\/[a-z]{2}\.merchantos\.com\/\?name=transaction\.views\.transaction&form_name=view&id=[0-9]{1,9}&tab=payments/
-    if(UrlMatch.test(url)){
-        Main()
-        console.log("Fired Main")
+// Fires based on whether the payments tab container is actually in the DOM, rather than a URL
+// regex match, since this app doesn't reliably signal tab-switches via pushState/URL alone.
+function isPaymentsTabActive(){
+    return Boolean(document.getElementById("admin_utilities_payments_view_single"))
+}
+
+function syncForCurrentPage(){
+    if(isPaymentsTabActive()){
+        if(!document.getElementById("myContainer")){
+            Main()
+        }
     } else {
         try{ document.getElementById("myContainer").remove() }catch{ null }
     }
 }
 
+let syncScheduled = false
+function scheduleSync(){
+    if(syncScheduled) return
+    syncScheduled = true
+    window.requestAnimationFrame(function(){
+        syncScheduled = false
+        syncForCurrentPage()
+    })
+}
+
 // route hook is installed once by the master loader; subscribe instead of patching history ourselves
-window.__mkl && window.__mkl.onRouteChange(function(){ onURLChange(location.href) })
+window.__mkl && window.__mkl.onRouteChange(scheduleSync)
+new MutationObserver(scheduleSync)
+    .observe(document.documentElement || document.body, { childList: true, subtree: true })
 // Returns rows from the payment table, handling both nested (multi-payment) and flat (single-payment) layouts
 function getPaymentRows(){
     var innerTbody = document.querySelector("#admin_utilities_payments_view_single table table tbody")
@@ -269,4 +286,4 @@ function ExtraDeets(rows){
 
 
 //Start Point
-onURLChange(location.href)
+scheduleSync()
