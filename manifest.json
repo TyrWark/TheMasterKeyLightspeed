@@ -84,6 +84,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/special-order-manager.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "item-vendor-id-manager",
+      "name": "Item Vendor ID Manager",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/item-vendor-id-manager.js",
+      "enabledByDefault": true
     }
   ]
 }
