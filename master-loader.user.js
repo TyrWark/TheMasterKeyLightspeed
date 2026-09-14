@@ -45,6 +45,13 @@
 	});
 	window.addEventListener('popstate', dispatchRouteChange);
 
+	// registered immediately (not gated on bootstrap) so it's always available even if the
+	// manifest/tool fetch is slow or failing - manifest.json and tools/*.js are already fetched
+	// fresh (cache-busted) on every load, so a reload is really all a "force refresh" needs to do.
+	if (typeof GM_registerMenuCommand === 'function') {
+		GM_registerMenuCommand('Master Key: Force Refresh', () => location.reload());
+	}
+
 	window.__mkl = {
 		onRouteChange(fn) { routeListeners.push(fn); },
 		async apiFetch(url, init) {
@@ -180,11 +187,15 @@
 		const note = document.createElement('p');
 		note.style.cssText = 'font-size:12px;color:#666;margin-top:10px;';
 		note.textContent = 'Changes take effect on next page load/navigation.';
+		const refreshBtn = document.createElement('button');
+		refreshBtn.textContent = 'Force Refresh Now';
+		refreshBtn.style.cssText = 'margin-top:6px;margin-right:6px;';
+		refreshBtn.addEventListener('click', () => location.reload());
 		const closeBtn = document.createElement('button');
 		closeBtn.textContent = 'Close';
 		closeBtn.style.cssText = 'margin-top:6px;';
 		closeBtn.addEventListener('click', () => overlay.remove());
-		panel.append(note, closeBtn);
+		panel.append(note, refreshBtn, closeBtn);
 		overlay.append(panel);
 		overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 		document.documentElement.append(overlay);
