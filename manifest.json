@@ -91,6 +91,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/item-vendor-id-manager.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "transferizer",
+      "name": "Transferizer - Bulk CSV Transfer Import (Chunked)",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/transferizer.js",
+      "enabledByDefault": true
     }
   ]
 }
