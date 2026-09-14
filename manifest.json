@@ -77,6 +77,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/misc-sale-enforcer.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "special-order-manager",
+      "name": "Lightspeed R-Series — Special Order Manager",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/special-order-manager.js",
+      "enabledByDefault": true
     }
   ]
 }
