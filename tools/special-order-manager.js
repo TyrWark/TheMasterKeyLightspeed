@@ -33,8 +33,10 @@
     if (sibling && sibling.className) btn.className = sibling.className;
     else Object.assign(btn.style, {
       padding:"6px 12px", marginLeft:"6px", cursor:"pointer",
-      border:"1px solid #2563eb", background:"#2563eb", color:"#fff", borderRadius:"6px"
+      border:"1px solid #2563eb", color:"#fff", borderRadius:"6px"
     });
+    // !important must be set via setProperty; a plain style.background assignment ignores it
+    btn.style.setProperty("background", "#2563eb", "important");
     btn.addEventListener("click", (e) => { e.preventDefault(); openPicker(currentCustomerId()); });
     funcs.appendChild(btn);
   }
