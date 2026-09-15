@@ -267,6 +267,7 @@
 
     const btn = document.createElement('button');
     btn.id = 'racFinderButton';
+    btn.type = 'button';
     btn.title = 'Find reserved account credit (paymentTypeID 4)';
     btn.className = 'supplementary';
     btn.textContent = 'Find Reserved Credit';
@@ -274,12 +275,21 @@
     bar.appendChild(btn);
   }
 
-  if (!isCustomerCreditPage()) return;
+  let buttonSyncScheduled = false;
+  function syncButton() {
+    buttonSyncScheduled = false;
+    if (isCustomerCreditPage()) insertButton();
+    else document.getElementById('racFinderButton')?.remove();
+  }
 
-  // The details tab loads async; retry until the functions bar exists
-  const iv = setInterval(() => {
-    insertButton();
-    if (document.getElementById('racFinderButton')) clearInterval(iv);
-  }, 500);
-  setTimeout(() => clearInterval(iv), 30000);
+  function scheduleButtonSync() {
+    if (buttonSyncScheduled) return;
+    buttonSyncScheduled = true;
+    window.requestAnimationFrame(syncButton);
+  }
+
+  window.__mkl?.onRouteChange(scheduleButtonSync);
+  new MutationObserver(scheduleButtonSync)
+    .observe(document.body, { childList: true, subtree: true });
+  scheduleButtonSync();
 })();

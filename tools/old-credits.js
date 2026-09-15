@@ -1681,8 +1681,31 @@
 		archiveButton.insertAdjacentElement('afterend', button);
 	};
 
+	const isCustomerCreditPage = () => {
+		const params = new URLSearchParams(location.search);
+		return params.get('name') === 'customer.views.customer'
+			&& params.get('form_name') === 'view'
+			&& params.has('id')
+			&& ['details', 'account'].includes(params.get('tab'));
+	};
+
+	let buttonSyncScheduled = false;
+	const syncButton = () => {
+		buttonSyncScheduled = false;
+		if (isCustomerCreditPage()) injectButton();
+		else document.getElementById('tm-fetch-customer')?.remove();
+	};
+	const scheduleButtonSync = () => {
+		if (buttonSyncScheduled) return;
+		buttonSyncScheduled = true;
+		window.requestAnimationFrame(syncButton);
+	};
+
 	const init = () => {
-		injectButton();
+		scheduleButtonSync();
+		window.__mkl?.onRouteChange(scheduleButtonSync);
+		new MutationObserver(scheduleButtonSync)
+			.observe(document.body, { childList: true, subtree: true });
 	};
 
 	if (document.readyState === 'loading') {
