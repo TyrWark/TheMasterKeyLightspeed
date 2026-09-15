@@ -105,6 +105,13 @@
       "match": ["https://*.merchantos.com/*"],
       "path": "tools/event-log-prettify-compare.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "sale-line-manager",
+      "name": "SaleLine Manager",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/sale-line-manager.js",
+      "enabledByDefault": true
     }
   ]
 }
