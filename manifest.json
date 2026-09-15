@@ -119,7 +119,10 @@
     {
       "id": "old-credits",
       "name": "Old Credits",
-      "match": ["https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*"],
+      "match": [
+        "https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*&tab=details",
+        "https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*&tab=account"
+      ],
       "path": "tools/old-credits.js",
       "enabledByDefault": true
     }
