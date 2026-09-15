@@ -27,6 +27,9 @@
 	const LOG_PREFIX = '[MasterKey]';
 	const ENABLED_KEY_PREFIX = 'mkl.enabled.';
 	const MANIFEST_CACHE_KEY = 'mkl.manifestCache';
+	const loadedToolIds = new Set();
+	let manifestTools = null;
+	let manageMenuRegistered = false;
 
 	// ─── Shared SPA route-change bus (installed once, before any tool loads) ───
 	const routeListeners = [];
@@ -82,7 +85,10 @@
 
 	// converts a userscript-style @match pattern (e.g. https://*.merchantos.com/*) into a RegExp
 	function patternToRegex(pattern) {
-		const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+		const escaped = pattern
+			.split('*')
+			.map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+			.join('.*');
 		return new RegExp('^' + escaped + '$');
 	}
 
@@ -136,6 +142,8 @@
 	}
 
 	async function loadTool(tool) {
+		if (loadedToolIds.has(tool.id)) return;
+		loadedToolIds.add(tool.id);
 		try {
 			if (Array.isArray(tool.requires)) {
 				for (const url of tool.requires) await loadRequire(url);
@@ -145,8 +153,14 @@
 			wrapped(scopedRegisterMenuCommand(tool), RAW_GM_unregisterMenuCommand, RAW_GM_setValue, RAW_GM_getValue, RAW_GM_setClipboard, RAW_unsafeWindow);
 			console.log(LOG_PREFIX, 'loaded', tool.id);
 		} catch (err) {
+			loadedToolIds.delete(tool.id);
 			console.error(LOG_PREFIX, 'failed to load', tool.id, err);
 		}
+	}
+
+	async function loadApplicableTools(tools) {
+		const applicable = tools.filter((tool) => toolAppliesHere(tool) && isToolEnabled(tool));
+		await Promise.all(applicable.map(loadTool));
 	}
 
 	async function bootstrap() {
@@ -157,9 +171,12 @@
 			console.error(LOG_PREFIX, 'no manifest available, aborting', err);
 			return;
 		}
-		const applicable = manifest.tools.filter((t) => toolAppliesHere(t) && isToolEnabled(t));
-		await Promise.all(applicable.map(loadTool));
-		registerMenu(manifest.tools);
+		manifestTools = manifest.tools;
+		await loadApplicableTools(manifestTools);
+		if (!manageMenuRegistered) {
+			registerMenu(manifestTools);
+			manageMenuRegistered = true;
+		}
 	}
 
 	// ─── Manage-tools menu ───
@@ -200,6 +217,10 @@
 		overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 		document.documentElement.append(overlay);
 	}
+
+	window.__mkl.onRouteChange(() => {
+		if (manifestTools) loadApplicableTools(manifestTools);
+	});
 
 	bootstrap();
 })();

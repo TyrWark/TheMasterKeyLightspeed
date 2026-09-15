@@ -1668,19 +1668,17 @@
 
 	const injectButton = () => {
 		if (document.getElementById('tm-fetch-customer')) return;
+		const archiveButton = document.querySelector('#employeeArchiveButton');
+		if (!archiveButton) return;
+
 		const button = document.createElement('button');
 		button.id = 'tm-fetch-customer';
+		button.type = 'button';
 		button.textContent = 'Fetch Customer';
-		Object.assign(button.style, {
-			position: 'absolute',
-			top: '12px',
-			right: '12px',
-			padding: '8px 12px',
-			zIndex: '9999',
-			cursor: 'pointer',
-		});
+		button.title = 'Load customer credit activity';
+		button.className = 'supplementary';
 		button.addEventListener('click', fetchCustomer);
-		document.body.appendChild(button);
+		archiveButton.insertAdjacentElement('afterend', button);
 	};
 
 	const init = () => {
