@@ -14,6 +14,14 @@
     return m ? m[1] : null;
   };
 
+  function isCustomerCreditPage() {
+    const params = new URLSearchParams(location.search);
+    return params.get('name') === 'customer.views.customer'
+      && params.get('form_name') === 'view'
+      && params.has('id')
+      && ['details', 'account'].includes(params.get('tab'));
+  }
+
   // SalePayments / SalePayment can be object or array -> always return array
   const asArray = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 
@@ -266,7 +274,9 @@
     bar.appendChild(btn);
   }
 
-  // The account tab loads async; retry until the functions bar exists
+  if (!isCustomerCreditPage()) return;
+
+  // The details tab loads async; retry until the functions bar exists
   const iv = setInterval(() => {
     insertButton();
     if (document.getElementById('racFinderButton')) clearInterval(iv);

@@ -31,7 +31,10 @@
     {
       "id": "credit-reserve-finder",
       "name": "Lightspeed - Reserved Account Credit Finder",
-      "match": ["https://us.merchantos.com/*"],
+      "match": [
+        "https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*&tab=details",
+        "https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*&tab=account"
+      ],
       "path": "tools/credit-reserve-finder.js",
       "enabledByDefault": true
     },
@@ -111,6 +114,13 @@
       "name": "SaleLine Manager",
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/sale-line-manager.js",
+      "enabledByDefault": true
+    },
+    {
+      "id": "old-credits",
+      "name": "Old Credits",
+      "match": ["https://us.merchantos.com/?name=customer.views.customer&form_name=view&id=*"],
+      "path": "tools/old-credits.js",
       "enabledByDefault": true
     }
   ]
