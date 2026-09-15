@@ -98,6 +98,13 @@
       "match": ["https://us.merchantos.com/*"],
       "path": "tools/transferizer.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "event-log-prettify-compare",
+      "name": "Lightspeed R-Series — Event Log Prettify + SaleLine/Item Compare",
+      "match": ["https://*.merchantos.com/*"],
+      "path": "tools/event-log-prettify-compare.js",
+      "enabledByDefault": true
     }
   ]
 }
