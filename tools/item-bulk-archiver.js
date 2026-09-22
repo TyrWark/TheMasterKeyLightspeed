@@ -389,18 +389,20 @@
 						return result;
 					}
 
+					// Resolve first even on a dry run: it validates every System ID up front and is
+					// the only thing that feeds the throttle readout with real bucket headers.
+					const itemId = keyIsItemId ? key : await resolveItemId(accountId, key);
+					result.itemId = itemId;
+
 					if (dryRun) {
-						result.itemId = keyIsItemId ? key : '(lookup skipped)';
 						result.status = 'dry-run';
 						result.message = [
-							hasUpdate ? `PUT ${JSON.stringify(payload)}` : null,
-							action === 'archive' ? 'DELETE (archive)' : null,
-						].filter(Boolean).join(' then ');
+							hasUpdate ? `would PUT ${JSON.stringify(payload)}` : null,
+							action === 'archive' ? 'would DELETE (archive)' : null,
+						].filter(Boolean).join(' then ') || 'resolved only';
 						return result;
 					}
 
-					const itemId = keyIsItemId ? key : await resolveItemId(accountId, key);
-					result.itemId = itemId;
 					const url = itemUrl(accountId, itemId);
 					const done = [];
 
@@ -431,6 +433,15 @@
 		let completed = 0;
 		let cursor = 0;
 
+		// Rows that short-circuit (missing key, nothing to do) never reach fetchJson's sleep, so
+		// the loop below could otherwise advance on microtasks alone and starve rendering.
+		let lastYield = performance.now();
+		const yieldToRender = async () => {
+			if (performance.now() - lastYield < 50) return;
+			await sleep(0);
+			lastYield = performance.now();
+		};
+
 		const worker = async () => {
 			for (;;) {
 				if (controller.stopped) return;
@@ -445,6 +456,7 @@
 				results.push(result);
 				completed += 1;
 				onProgress?.(result, completed);
+				await yieldToRender();
 			}
 		};
 
@@ -666,6 +678,7 @@
 		dryRunInput.type = 'checkbox';
 		dryRunInput.checked = isDryRun();
 		const dryRunLabel = document.createElement('label');
+		dryRunLabel.title = 'Still resolves every System ID with a GET, but never sends a PUT or DELETE.';
 		dryRunLabel.append(dryRunInput, 'Dry run');
 
 		const startRowInput = document.createElement('input');
