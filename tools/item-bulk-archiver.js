@@ -322,14 +322,16 @@
 	// Row processing
 	// ---------------------------------------------------------------------
 
-	const resolveItemId = async (accountId, systemSku) => {
-		const url = `${apiBase(accountId)}/Item.json?systemSku=${encodeURIComponent(systemSku)}&limit=2&load_relations=%5B%5D`;
+	// archived defaults to false, which would hide an already-archived item and make it look
+	// like the System ID doesn't exist at all.
+	const resolveItem = async (accountId, systemSku) => {
+		const url = `${apiBase(accountId)}/Item.json?systemSku=${encodeURIComponent(systemSku)}&archived=true&limit=2&load_relations=%5B%5D`;
 		const data = await fetchJson(url, { method: 'GET' });
 		const found = data?.Item == null ? [] : (Array.isArray(data.Item) ? data.Item : [data.Item]);
 
 		if (found.length === 0) throw new Error('No item matches that System ID');
 		if (found.length > 1) throw new Error(`System ID matched ${found.length} items; refusing to guess`);
-		return String(found[0].itemID);
+		return { itemId: String(found[0].itemID), archived: String(found[0].archived) === 'true' };
 	};
 
 	const processRows = async (dataRows, mapping, options, onProgress) => {
@@ -369,7 +371,7 @@
 		const processOne = async (i) => {
 			const row = dataRows[i];
 			const key = String(row[keyMap.columnIndex] ?? '').trim();
-			const result = { rowNumber: i + 2, key, itemId: '', status: 'pending', message: '' };
+			const result = { rowNumber: i + 2, key, itemId: '', wasArchived: '', status: 'pending', message: '' };
 
 			if (!key) {
 				result.status = 'skipped';
@@ -389,17 +391,28 @@
 						return result;
 					}
 
-					// Resolve first even on a dry run: it validates every System ID up front and is
-					// the only thing that feeds the throttle readout with real bucket headers.
-					const itemId = keyIsItemId ? key : await resolveItemId(accountId, key);
+					// Resolve first even on a dry run: it validates every System ID up front, records
+					// the pre-run archived state, and feeds the throttle readout real bucket headers.
+					let itemId = key;
+					let wasArchived = null;
+					if (!keyIsItemId) {
+						const found = await resolveItem(accountId, key);
+						itemId = found.itemId;
+						wasArchived = found.archived;
+					}
 					result.itemId = itemId;
+					result.wasArchived = wasArchived === null ? 'unknown' : String(wasArchived);
+					const alreadyArchived = wasArchived === true;
 
 					if (dryRun) {
 						result.status = 'dry-run';
 						result.message = [
+							`archived=${result.wasArchived}`,
 							hasUpdate ? `would PUT ${JSON.stringify(payload)}` : null,
-							action === 'archive' ? 'would DELETE (archive)' : null,
-						].filter(Boolean).join(' then ') || 'resolved only';
+							action === 'archive'
+								? (alreadyArchived ? 'already archived, would skip DELETE' : 'would DELETE (archive)')
+								: null,
+						].filter(Boolean).join('; ');
 						return result;
 					}
 
@@ -412,13 +425,19 @@
 					}
 					// Archive last: a DELETE zeroes inventory, so any field edits land first.
 					if (action === 'archive') {
-						await fetchJson(url, { method: 'DELETE' });
-						done.push('archived');
+						if (alreadyArchived) {
+							done.push('already archived before this run');
+						} else {
+							await fetchJson(url, { method: 'DELETE' });
+							done.push('archived');
+						}
 					} else if (action === 'unarchive') {
-						done.push('unarchived');
+						done.push(wasArchived === false ? 'was not archived' : 'unarchived');
 					}
 
-					result.status = action === 'archive' ? 'archived' : (action === 'unarchive' ? 'unarchived' : 'updated');
+					result.status = action === 'archive'
+						? (alreadyArchived ? 'already-archived' : 'archived')
+						: (action === 'unarchive' ? 'unarchived' : 'updated');
 					result.message = done.join(' + ');
 				} catch (error) {
 					result.status = 'error';
@@ -503,6 +522,7 @@
 			.tm-ibu-line { padding: 2px 0; border-bottom: 1px solid #eee; }
 			.tm-ibu-line[data-status="updated"], .tm-ibu-line[data-status="archived"], .tm-ibu-line[data-status="unarchived"] { color: #0a7d2f; }
 			.tm-ibu-line[data-status="dry-run"] { color: #8a6d00; }
+			.tm-ibu-line[data-status="already-archived"] { color: #8a6d00; }
 			.tm-ibu-line[data-status="error"] { color: #c0392b; }
 			.tm-ibu-line[data-status="skipped"] { color: #888; }
 		`;
@@ -533,7 +553,7 @@
 	};
 
 	const downloadResultsCsv = (results) => {
-		const cols = ['rowNumber', 'key', 'itemId', 'status', 'message'];
+		const cols = ['rowNumber', 'key', 'itemId', 'wasArchived', 'status', 'message'];
 		const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 		const lines = [cols.join(',')].concat(results.map((r) => cols.map((c) => escape(r[c])).join(',')));
 		const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
