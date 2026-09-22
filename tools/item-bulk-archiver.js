@@ -651,7 +651,7 @@
 		modal.className = 'tm-ibu-modal';
 		modal.innerHTML = `
 			<h2>Item Bulk Updater &amp; Archiver</h2>
-			<p class="tm-ibu-sub">Paste System IDs, or load a CSV/Excel file and map its columns. Only mapped columns are sent &mdash; a PUT is a partial update, so unmapped item fields are left alone.</p>
+			<p class="tm-ibu-sub">Paste System IDs, or load a CSV/Excel file and map its columns.</p>
 			<div id="tm-ibu-source">
 				<label>Paste System IDs (one per line)</label>
 				<textarea id="tm-ibu-paste" placeholder="210000000020&#10;210000000021"></textarea>
@@ -668,8 +668,8 @@
 		const actionSelect = document.createElement('select');
 		actionSelect.innerHTML = `
 			<option value="none">Update fields only</option>
-			<option value="archive">Archive (DELETE)</option>
-			<option value="unarchive">Unarchive (archived = false)</option>
+			<option value="archive">Archive</option>
+			<option value="unarchive">Unarchive</option>
 		`;
 		const actionLabel = document.createElement('label');
 		actionLabel.append('Action: ', actionSelect);
