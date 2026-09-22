@@ -96,6 +96,14 @@
       "enabledByDefault": true
     },
     {
+      "id": "item-bulk-archiver",
+      "name": "Item Bulk Updater & Archiver",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/item-bulk-archiver.js",
+      "requires": ["https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
+      "enabledByDefault": true
+    },
+    {
       "id": "transferizer",
       "name": "Transferizer - Bulk CSV Transfer Import (Chunked)",
       "match": ["https://us.merchantos.com/*"],
