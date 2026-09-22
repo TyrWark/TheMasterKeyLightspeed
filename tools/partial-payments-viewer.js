@@ -21,17 +21,34 @@ function getSaleID(){
     sid = (document.location.href).split("id=")[1].split("&")[0];
 }
 
+// Reads the account id from the page's own global instead of scraping the #help_account_id DOM node
+function getAccountId(){
+    if(window.__mkl){
+        var id = window.__mkl.getAccountId()
+        if(id) return id
+    }
+    if(window.merchantos && window.merchantos.account) return window.merchantos.account.id
+    if(typeof unsafeWindow !== 'undefined' && unsafeWindow.merchantos && unsafeWindow.merchantos.account) return unsafeWindow.merchantos.account.id
+    return null
+}
+
 //Grab all Payments on a Sale
 function getSalePayments(){
-    return new Promise(function(resolve){
+    return new Promise(function(resolve, reject){
+        var accountId = getAccountId()
+        if(!accountId){
+            console.error("[PartialPayments] Could not resolve account id (window.merchantos.account.id)")
+            reject(new Error("account id not found"))
+            return
+        }
         $.getJSON(
-            location.origin+'/API/Account/'+document.querySelector("#help_account_id > var").innerText+'/Sale/'+sid+'.json?load_relations=all'
+            location.origin+'/API/Account/'+accountId+'/Sale/'+sid+'.json?load_relations=all'
         ).done(function(json){
-            var Saleinfo = json.Sale.SalePayments.SalePayment
+            var Saleinfo = json.Sale.SalePayments && json.Sale.SalePayments.SalePayment
             console.log(json.Sale)
 
-            // Normalize: API returns object for 1 payment, array for multiple
-            var entries = Array.isArray(Saleinfo) ? Saleinfo : [Saleinfo]
+            // Normalize: API returns object for 1 payment, array for multiple, and omits the key entirely for none
+            var entries = Saleinfo ? (Array.isArray(Saleinfo) ? Saleinfo : [Saleinfo]) : []
 
             Payments = [Headers]
             for (var entry of entries) {
@@ -42,14 +59,17 @@ function getSalePayments(){
                     entry.salePaymentID
                 ])
             }
+            if(entries.length === 0){
+                Payments.push(["No payments found", "", "", ""])
+            }
 
             console.log("_____Payment List Below_____")
             console.log("Format = Payment Type, Amount, Archived, salePaymentID")
             console.log(Payments)
             console.log("_____Payment List Above_____")
             resolve()
-        }).fail(function(){
-            console.log("getSalePayments failed")
+        }).fail(function(jqXHR, textStatus){
+            console.error("[PartialPayments] getSalePayments API request failed:", textStatus, jqXHR && jqXHR.status)
             resolve()
         })
     })
@@ -64,7 +84,8 @@ function isPaymentsTabActive(){
 function syncForCurrentPage(){
     if(isPaymentsTabActive()){
         if(!document.getElementById("myContainer")){
-            Main()
+            // Main() is async - without this catch, failures vanish as unhandled rejections
+            Main().catch(function(err){ console.error("[PartialPayments] Main() failed:", err) })
         }
     } else {
         try{ document.getElementById("myContainer").remove() }catch{ null }
@@ -117,16 +138,22 @@ function LinkGenerator(){
 //Returns a Promise<boolean> — true if any payment used a ccChargeID (LSPay)
 function PayProvider(){
     return new Promise(function(resolve){
+        var accountId = getAccountId()
+        if(!accountId){
+            console.error("[PartialPayments] PayProvider: could not resolve account id, defaulting to false")
+            resolve(false)
+            return
+        }
         $.getJSON(
-            location.origin+'/API/Account/'+document.querySelector("#help_account_id > var").innerText+'/Sale/'+sid+'.json?load_relations=["SalePayments"]'
+            location.origin+'/API/Account/'+accountId+'/Sale/'+sid+'.json?load_relations=["SalePayments"]'
         ).done(function(json){
-            var Saleinfo = json.Sale.SalePayments.SalePayment
-            var entries = Array.isArray(Saleinfo) ? Saleinfo : [Saleinfo]
+            var Saleinfo = json.Sale.SalePayments && json.Sale.SalePayments.SalePayment
+            var entries = Saleinfo ? (Array.isArray(Saleinfo) ? Saleinfo : [Saleinfo]) : []
             var hasLSPay = entries.some(function(entry){ return entry.ccChargeID !== "0" })
             console.log("Has LSPay charges:", hasLSPay)
             resolve(hasLSPay)
-        }).fail(function(){
-            console.log("PayProvider request failed, defaulting to false")
+        }).fail(function(jqXHR, textStatus){
+            console.error("[PartialPayments] PayProvider request failed, defaulting to false:", textStatus, jqXHR && jqXHR.status)
             resolve(false)
         })
     })
@@ -228,12 +255,12 @@ function CreateButton(){
 
 
 
-        try {
-            document.querySelector("#printGiftReceiptButton").after(zNode);
-        }catch{
-            document.querySelector("#printQuoteButton").after(zNode)
-
+        var anchor = document.querySelector("#printGiftReceiptButton") || document.querySelector("#printQuoteButton")
+        if(!anchor){
+            console.error("[PartialPayments] Could not find #printGiftReceiptButton or #printQuoteButton to attach button next to")
+            return
         }
+        anchor.after(zNode);
 
 
 
