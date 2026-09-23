@@ -777,6 +777,42 @@
 
 			return runExclusiveForCustomer(customerId, async () => {
 				try {
+					const archiveMap = mapping.find((m) => m.target === 'flat:archived');
+					const archiveCell = archiveMap ? row[archiveMap.columnIndex] : undefined;
+					const archiveValue = String(archiveCell ?? '').trim();
+					const shouldArchive = archiveMap && archiveValue !== '' && archiveValue.toUpperCase() !== 'NULL' && toBool(archiveValue) === 'true';
+
+					if (shouldArchive) {
+						const url = buildCustomerUrl(accountId, customerId);
+						if (dryRun) {
+							result.status = 'dry-run';
+							result.message = `DELETE ${url} (archive customer)`;
+							return result;
+						}
+
+						await fetchJson(url, { method: 'DELETE' });
+
+						if (verifyWrites) {
+							try {
+								await fetchJson(buildCustomerUrl(accountId, customerId, true), { method: 'GET' });
+								result.status = 'mismatch';
+								result.message = 'DELETE sent but customer still exists';
+							} catch (error) {
+								const message = error?.message || String(error);
+								if (/404|Not Found|No such|not found/i.test(message)) {
+									result.status = 'verified';
+									result.message = 'DELETE confirmed via re-GET (customer no longer found)';
+								} else {
+									throw error;
+								}
+							}
+						} else {
+							result.status = 'updated';
+							result.message = 'Customer archived via DELETE';
+						}
+						return result;
+					}
+
 					const relationUrl = buildCustomerUrl(accountId, customerId, true);
 					const existingData = await fetchJson(relationUrl, { method: 'GET' });
 					const payload = buildPayload(existingData, row, mapping);
