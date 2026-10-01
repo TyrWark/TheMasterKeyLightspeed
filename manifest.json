@@ -140,6 +140,13 @@
       ],
       "path": "tools/old-credits.js",
       "enabledByDefault": true
+    },
+    {
+      "id": "category-auditor",
+      "name": "MerchantOS Category Misplacement Auditor",
+      "match": ["https://*.merchantos.com/*"],
+      "path": "tools/category-auditor.js",
+      "enabledByDefault": true
     }
   ]
 }
