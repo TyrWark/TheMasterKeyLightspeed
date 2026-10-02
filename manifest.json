@@ -47,6 +47,14 @@
       "enabledByDefault": true
     },
     {
+      "id": "customer-csv-importer",
+      "name": "Customer CSV/Excel New Customer Importer",
+      "match": ["https://us.merchantos.com/*"],
+      "path": "tools/customer-csv-importer.js",
+      "requires": ["https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
+      "enabledByDefault": true
+    },
+    {
       "id": "employee-role-exim",
       "name": "Lightspeed Employee Role Export/Import",
       "match": ["https://us.merchantos.com/*"],
